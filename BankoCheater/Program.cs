@@ -90,7 +90,7 @@ namespace BankoCheater
                 }
                 else
                 {
-                    Console.WriteLine("fejl i convertering!");
+                    Console.WriteLine("fejl i konvertering!");
                 }
             }
             return intList;
@@ -103,7 +103,7 @@ namespace BankoCheater
             {
                 string json = JsonConvert.SerializeObject(plader, Formatting.Indented);
                 System.IO.File.WriteAllText(sti, json);
-                Console.WriteLine("Pladerne er gemt korrekt!");
+                Console.WriteLine("Pladen er gemt korrekt!");
             }
             catch (Exception ex)
             {
@@ -137,7 +137,7 @@ namespace BankoCheater
 
                     foreach (var bingoRække in bingoRækker)
                     {
-                        Console.WriteLine($"Bingo! De indtastede tal udgør en hel række {bingoRække} på pladen for {plade.Navn}");
+                        Console.WriteLine($"Bingo! De indtastede tal udgør en hel række {bingoRække} på pladen {plade.Navn}");
                     }
                 }
 

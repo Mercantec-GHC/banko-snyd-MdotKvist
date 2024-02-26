@@ -15,9 +15,9 @@ C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoCheater.AssemblyInfo.cs
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoCheater.csproj.CoreCompileInputs.cache
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoCheater.sourcelink.json
-C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoCheater.csproj.CopyComplete
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoCheater.dll
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\refint\BankoCheater.dll
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoCheater.pdb
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoCheater.genruntimeconfig.cache
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\ref\BankoCheater.dll
+C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoChe.62AB7640.Up2Date
