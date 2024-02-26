@@ -133,10 +133,11 @@ namespace BankoCheater
                 // Tjek om de indtastede tal udgør en hel række på pladen
                 foreach (var plade in plader)
                 {
-                    if (ErBingo(plade, indtastedeTal))
+                    List<int> bingoRækker = ErBingo(plade, indtastedeTal);
+
+                    foreach (var bingoRække in bingoRækker)
                     {
-                        Console.WriteLine($"Bingo! De indtastede tal udgør en hel række på pladen for {plade.Navn}");
-                        break; // Bingo blev fundet, så gå videre til næste iteration
+                        Console.WriteLine($"Bingo! De indtastede tal udgør en hel række {bingoRække} på pladen for {plade.Navn}");
                     }
                 }
 
@@ -147,20 +148,20 @@ namespace BankoCheater
         }
 
         // Metode til at kontrollere, om de indtastede tal udgør en hel række på pladen
-        static bool ErBingo(Plade plade, List<int> indtastedeTal)
+        static List<int> ErBingo(Plade plade, List<int> indtastedeTal)
         {
             List<int>[] rækker = { plade.Række1, plade.Række2, plade.Række3 };
+            List<int> bingoRækker = new List<int>();
 
             // Tjek for hver række
             foreach (var række in rækker)
             {
-                // Hvis antallet af indtastede tal i rækken ikke er 5, så gå videre til næste række
-                if (indtastedeTal.Count(t => række.Contains(t)) != 5)
-                    return false;
+                // Hvis antallet af indtastede tal i rækken er 5, tilføj rækkens nummer til listen over bingo-rækker
+                if (indtastedeTal.Count(t => række.Contains(t)) == 5)
+                    bingoRækker.Add(rækker.ToList().IndexOf(række) + 1); // Tilføj 1 for at få rækkens nummer, da index starter fra 0
             }
 
-            // Hvis alle rækker har fem tal, returner sandt
-            return true;
+            return bingoRækker;
         }
 
 
