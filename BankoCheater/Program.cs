@@ -70,7 +70,7 @@ namespace BankoCheater
 
         static List<int> ParseToIntList(string numbers)
         {
-            return numbers.Split(' ') // deler Stringen op hvor der er mellemrum
+            return numbers.Split(' ') //Deler Stringen op hvor der er mellemrum
                           .Select(n => int.TryParse(n, out int result) ? result : 0) //For hver opdelte string forsøger den at converter den til et helt tal, hvis den kan det returnere den tallet til result variablen. ellers returner vi 0
                           .Where(n => n != 0) //denne linje filtrer talene der ikke er nul fra (Den filtrer bokstaverne fra som den ikke kunne lave om til en int i forrige linje)
                           .ToList(); //Her pakker den tallene ind i en liste og retunere
