@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Newtonsoft.Json;
+using OpenQA.Selenium.Support.UI;
+using SeleniumExtras.WaitHelpers;
 
 namespace BankoCheater
 {
@@ -15,95 +18,68 @@ namespace BankoCheater
 
             Console.WriteLine("Hvad er dit navn? ");
             string brugerNavn = Console.ReadLine();
-
             Console.WriteLine("Hvor mange plader vil du bruge?");
-            int antalPlader = Convert.ToInt32(Console.ReadLine());
 
+            long antalPlader = Convert.ToInt64(Console.ReadLine());
             List<Plade> plader = new List<Plade>();
+            ChromeOptions options = new ChromeOptions();
+
+            options.PageLoadStrategy = PageLoadStrategy.None;
 
             using (IWebDriver webdriver = new ChromeDriver(driverPath))
             {
+
                 webdriver.Navigate().GoToUrl(url);
 
                 for (int i = 0; i < antalPlader; i++)
                 {
-                    Console.WriteLine($"Navn: {brugerNavn}{i}");
                     IWebElement inputField = webdriver.FindElement(By.Id("tekstboks"));
                     inputField.SendKeys(brugerNavn + i);
 
                     IWebElement generateButton = webdriver.FindElement(By.Id("knap"));
                     generateButton.Click();
 
-                    System.Threading.Thread.Sleep(0);
+                    WebDriverWait wait = new WebDriverWait(webdriver, TimeSpan.FromSeconds(10));
+                    wait.Until(ExpectedConditions.ElementIsVisible(By.Id("p11"))); // Vent til elementet er synligt
 
-                    IWebElement row1 = webdriver.FindElement(By.Id("p11"));
-                    IWebElement row2 = webdriver.FindElement(By.Id("p12"));
-                    IWebElement row3 = webdriver.FindElement(By.Id("p13"));
-
-                    string bingoNumbersRow1 = row1.Text.Trim();
-                    string bingoNumbersRow2 = row2.Text.Trim();
-                    string bingoNumbersRow3 = row3.Text.Trim();
-
-                    Console.WriteLine($"Tal for plade {i + 1}");
-                    Console.WriteLine($"Række 1: {bingoNumbersRow1}");
-                    Console.WriteLine($"Række 2: {bingoNumbersRow2}");
-                    Console.WriteLine($"Række 3: {bingoNumbersRow3}");
-
-                    // Parse strengene til en liste af heltal
-                    List<int> row1Numbers = ParseToIntList(bingoNumbersRow1);
-                    List<int> row2Numbers = ParseToIntList(bingoNumbersRow2);
-                    List<int> row3Numbers = ParseToIntList(bingoNumbersRow3);
-
-                    // Tilføj plade til listen
                     Plade plade = new Plade
                     {
-                        Navn = brugerNavn + i,
-                        Række1 = row1Numbers,
-                        Række2 = row2Numbers,
-                        Række3 = row3Numbers
+                        Navn = $"{brugerNavn}{i}",
+                        Række1 = ParseToIntList(webdriver.FindElement(By.Id("p11")).Text),
+                        Række2 = ParseToIntList(webdriver.FindElement(By.Id("p12")).Text),
+                        Række3 = ParseToIntList(webdriver.FindElement(By.Id("p13")).Text),
+                        BingoStatus = new bool[3]
                     };
+
                     plader.Add(plade);
-
-                    // Clear input field for the next iteration
                     inputField.Clear();
-
-                    // Gem pladerne i en JSON-fil
-                    GemPlader(plader);
                 }
 
-                // Spørg brugeren om de opråbte tal og tjek for bingo
-                søgITal(plader);
+                GemPlader(plader);
             }
-        }
 
+            søgITal(plader);
+        }
 
         static List<int> ParseToIntList(string numbers)
         {
-            List<int> intList = new List<int>();
-            string[] numberStrings = numbers.Split(' ');
-            foreach (var numString in numberStrings)
-            {
-                int number;
-                if (int.TryParse(numString, out number))
-                {
-                    intList.Add(number);
-                }
-                else
-                {
-                    Console.WriteLine("fejl i konvertering!");
-                }
-            }
-            return intList;
+            return numbers.Split(' ') // deler Stringen op hvor der er mellemrum
+                          .Select(n => int.TryParse(n, out int result) ? result : 0) //For hver opdelte string forsøger den at converter den til et helt tal, hvis den kan det returnere den tallet til result variablen. ellers returner vi 0
+                          .Where(n => n != 0) //denne linje filtrer talene der ikke er nul fra (Den filtrer bokstaverne fra som den ikke kunne lave om til en int i forrige linje)
+                          .ToList(); //Her pakker den tallene ind i en liste og retunere
         }
 
+        //denne funktion gemmer pladerne i json filen
         static void GemPlader(List<Plade> plader)
         {
             string sti = @"C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\plader.json";
+            Console.Clear();
+
             try
             {
                 string json = JsonConvert.SerializeObject(plader, Formatting.Indented);
                 System.IO.File.WriteAllText(sti, json);
-                Console.WriteLine("Pladen er gemt korrekt!");
+                Console.WriteLine("Pladerne er gemt korrekt!");
             }
             catch (Exception ex)
             {
@@ -113,59 +89,69 @@ namespace BankoCheater
 
         static void søgITal(List<Plade> plader)
         {
+            Console.WriteLine("-------------------------------------------------------------------");
             Console.WriteLine("Indtast de opråbte tal (eller skriv 'done' for at afslutte): ");
-            string input = Console.ReadLine();
-
             List<int> indtastedeTal = new List<int>();
-
-            while (input.ToLower() != "done")
+            string input;
+            string tidligereTal = "";
+            while ((input = Console.ReadLine()) != "done")
             {
-                int søgeTal;
-                if (!int.TryParse(input, out søgeTal))
+                if (int.TryParse(input, out int tal))
                 {
-                    Console.WriteLine("Ugyldigt input. Indtast venligst et tal eller 'done' for at afslutte: ");
-                    input = Console.ReadLine();
-                    continue;
-                }
-
-                indtastedeTal.Add(søgeTal);
-
-                // Tjek om de indtastede tal udgør en hel række på pladen
-                foreach (var plade in plader)
-                {
-                    List<int> bingoRækker = ErBingo(plade, indtastedeTal);
-
-                    foreach (var bingoRække in bingoRækker)
+                    if (!indtastedeTal.Contains(tal)) // Check if the list already contains the number
                     {
-                        Console.WriteLine($"Bingo! De indtastede tal udgør en hel række {bingoRække} på pladen {plade.Navn}");
+                        indtastedeTal.Add(tal); // Add the number if it's not already in the list
+                        Console.Clear();
+                        Console.WriteLine("Tidligere tal: " + string.Join(" - ", indtastedeTal)); // Directly use the list to show previous numbers
+                    }
+                    else
+                    {
+                        Console.Clear();
+                        Console.WriteLine("Tidligere tal: " + string.Join(" - ", indtastedeTal)); // Directly use the list to show previous numbers
+
+                        Console.WriteLine("Tallet er allerede indtastet, prøv igen.");
+                    }
+
+                    Console.WriteLine(tidligereTal.TrimEnd());
+
+                    foreach (var plade in plader)
+                    {
+                        UpdateBingoStatus(plade, indtastedeTal);
+
+                        int bingoCount = plade.BingoStatus.Count(b => b);
+                        if (bingoCount == 1)
+                        {
+                            Console.WriteLine($"\n\tBingo på ( {bingoCount} ) række! {plade.Navn} har bingo: {string.Join(",", plade.Række1)}\n");
+                        }
+                        else if (bingoCount == 2)
+                        {
+                            Console.WriteLine($"\n\tBingo på ( {bingoCount} ) rækker! {plade.Navn} har bingo på to rækker: {string.Join(",", plade.Række2)}\n");
+                        }
+                        else if (bingoCount == 3)
+                        {
+                            Console.WriteLine($"\n Bingo ( Fuld ) plade! {plade.Navn} har bingo på alle tre rækker: {string.Join(",", plade.Række3)}\n");
+                            return; // Afslutter, når en fuld plade er opnået
+                        }
                     }
                 }
-
-                // Indtast det næste tal eller afslut
-                Console.WriteLine("Indtast det næste opråbte tal (eller skriv 'done' for at afslutte): ");
-                input = Console.ReadLine();
+                else
+                {
+                    Console.WriteLine("Ugyldigt input, prøv igen.");
+                }
             }
         }
 
-        // Metode til at kontrollere, om de indtastede tal udgør en hel række på pladen
-        static List<int> ErBingo(Plade plade, List<int> indtastedeTal)
+        static void UpdateBingoStatus(Plade plade, List<int> indtastedeTal)
         {
-            List<int>[] rækker = { plade.Række1, plade.Række2, plade.Række3 };
-            List<int> bingoRækker = new List<int>();
-
-            // Tjek for hver række
-            foreach (var række in rækker)
+            List<List<int>> rækker = new List<List<int>> { plade.Række1, plade.Række2, plade.Række3 };
+            for (int i = 0; i < rækker.Count; i++)
             {
-                // Hvis antallet af indtastede tal i rækken er 5, tilføj rækkens nummer til listen over bingo-rækker
-                if (indtastedeTal.Count(t => række.Contains(t)) == 5)
-                    bingoRækker.Add(rækker.ToList().IndexOf(række) + 1); // Tilføj 1 for at få rækkens nummer, da index starter fra 0
+                if (!rækker[i].Except(indtastedeTal).Any() && !plade.BingoStatus[i])
+                {
+                    plade.BingoStatus[i] = true; // Markerer rækken som havende bingo
+                }
             }
-
-            return bingoRækker;
         }
-
-
-
     }
 
     class Plade
@@ -174,8 +160,10 @@ namespace BankoCheater
         public List<int> Række1 { get; set; }
         public List<int> Række2 { get; set; }
         public List<int> Række3 { get; set; }
+        public bool[] BingoStatus { get; set; } // Tilføjet for at holde styr på bingo-status for hver række
     }
 }
+
 
 
 
@@ -191,46 +179,70 @@ namespace BankoCheater
 //    {
 //        static void Main(string[] args)
 //        {
+//            //Variabler til at definere Url stien og stien til ChromeDriveren
 //            string url = "https://mags-template.github.io/Banko/";
 //            string driverPath = @"C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\chromedriver.exe";
 
+//            //Indtast navn her
 //            Console.WriteLine("Hvad er dit navn? ");
 //            string brugerNavn = Console.ReadLine();
 
+//            //Indtast hvor mange plader du vil bruge her
 //            Console.WriteLine("Hvor mange plader vil du bruge?");
+//            //Convert input til Int(32) og gem i variabelen antalPlader
 //            int antalPlader = Convert.ToInt32(Console.ReadLine());
 
+//            //Laver en liste Ved navn plader
 //            List<Plade> plader = new List<Plade>();
 
+//            //Her fortæller vi programmet at hvergang vi skriver webdriver referer vi til ChromeDriver
+//            //Den ved hvor Driveren ligger på grund af den variable vi har angivet i () Som referer til vores eksiterende variabel
 //            using (IWebDriver webdriver = new ChromeDriver(driverPath))
 //            {
+//                //Her fortæller vi den at den skal navigere til vores URL
+//                //Den variable der ligger i () altså url referer til vores eksisterende url Variable
 //                webdriver.Navigate().GoToUrl(url);
+//                //Console.Clear() sletter den tekst der er i konsollen
+//                Console.Clear();
 
+//                //Her starter vi et for loop som køre indtil vores variable: antalPlader er mindre end variablen i
 //                for (int i = 0; i < antalPlader; i++)
 //                {
+//                    //Her skriver konsollen navn: også det brugerNavn der blev tastet ind tideligere
+//                    //Der udover tilføjer vi variable i for at vi kan se i konsollen hvilken plader der er tale om 
 //                    Console.WriteLine($"Navn: {brugerNavn}{i}");
+//                    //her går ChromeDriveren så ind og finder et id i HTML'en som hedder "tekstboks"
+//                    //Det id gemmer den så i en IWebElement der hedder InputField
 //                    IWebElement inputField = webdriver.FindElement(By.Id("tekstboks"));
+//                    //Denne linje indtaster Brugernavn og i altså tallet vi er kommer til på pladen ind på hjemme siden
 //                    inputField.SendKeys(brugerNavn + i);
-
+//                    //Her går ChromeDriveren ind i HTML'en og finder et id der hedder "knap"
+//                    //Det id gemmer den så i en IWebElement variavle kaldet generateButton
 //                    IWebElement generateButton = webdriver.FindElement(By.Id("knap"));
+//                    //Den gemte variable generateButton Fortæller Click() funktionen hvad den skal trykke på
 //                    generateButton.Click();
 
+//                    //Denne linje får Programmet til at vente i 0 sekunder
+//                    //Nullet i ()'erne kan ændres hvis hjemmesiden ikke kan nå at generer tallene inden programmet henter tallene
 //                    System.Threading.Thread.Sleep(0);
 
+//                    //I de 3 næste linjer finder ChromeDriveren de 3 id'ere "p11-p13" og gemmer id'erne i 3 variable row1-row3
 //                    IWebElement row1 = webdriver.FindElement(By.Id("p11"));
 //                    IWebElement row2 = webdriver.FindElement(By.Id("p12"));
 //                    IWebElement row3 = webdriver.FindElement(By.Id("p13"));
 
+//                    //Her trimmer vi teksten fra de 3 variabler i linjerne oven over og gemmer det i 3 string variabler bingoNumbersRow1-3
 //                    string bingoNumbersRow1 = row1.Text.Trim();
 //                    string bingoNumbersRow2 = row2.Text.Trim();
 //                    string bingoNumbersRow3 = row3.Text.Trim();
 
+//                    //Udskriv i konsollen hver gang den har kørt en plade igennem
 //                    Console.WriteLine($"Tal for plade {i + 1}");
 //                    Console.WriteLine($"Række 1: {bingoNumbersRow1}");
 //                    Console.WriteLine($"Række 2: {bingoNumbersRow2}");
 //                    Console.WriteLine($"Række 3: {bingoNumbersRow3}");
 
-//                    // Parse strengene til en liste af heltal
+//                    //Her laver den Variablerne bingoNumbersRow1-3 om til int og gemmer det i en liste kaldet row1-3Numbers
 //                    List<int> row1Numbers = ParseToIntList(bingoNumbersRow1);
 //                    List<int> row2Numbers = ParseToIntList(bingoNumbersRow2);
 //                    List<int> row3Numbers = ParseToIntList(bingoNumbersRow3);
@@ -238,7 +250,7 @@ namespace BankoCheater
 //                    // Tilføj plade til listen
 //                    Plade plade = new Plade
 //                    {
-//                        Navn = brugerNavn,
+//                        Navn = brugerNavn + i,
 //                        Række1 = row1Numbers,
 //                        Række2 = row2Numbers,
 //                        Række3 = row3Numbers
@@ -271,7 +283,7 @@ namespace BankoCheater
 //                }
 //                else
 //                {
-//                    Console.WriteLine("fejl i convertering!");
+//                    Console.WriteLine("fejl i konvertering!");
 //                }
 //            }
 //            return intList;
@@ -284,7 +296,7 @@ namespace BankoCheater
 //            {
 //                string json = JsonConvert.SerializeObject(plader, Formatting.Indented);
 //                System.IO.File.WriteAllText(sti, json);
-//                Console.WriteLine("Pladerne er gemt korrekt!");
+//                Console.WriteLine("Pladen er gemt korrekt!");
 //            }
 //            catch (Exception ex)
 //            {
@@ -294,76 +306,56 @@ namespace BankoCheater
 
 //        static void søgITal(List<Plade> plader)
 //        {
+//            Console.WriteLine("Indtast de opråbte tal (eller skriv 'done' for at afslutte): ");
+//            string input = Console.ReadLine();
 
+//            List<int> indtastedeTal = new List<int>();
 
-
-
-//            //// Indtast det opråbte tal
-//            //Console.WriteLine("Indtast det opråbte tal (eller skriv 'done' for at afslutte): ");
-//            //string input = Console.ReadLine();
-
-//            //// Fortsæt, indtil brugeren indtaster "done"
-//            //while (input.ToLower() != "done")
-//            //{
-//            //    int søgeTal;
-//            //    if (!int.TryParse(input, out søgeTal))
-//            //    {
-//            //        Console.WriteLine("Ugyldigt input. Indtast venligst et tal eller 'done' for at afslutte: ");
-//            //        input = Console.ReadLine();
-//            //        continue;
-//            //    }
-
-//            //    // Tjek hver plade for bingo
-//            //     foreach (var plade in plader)
-//            //    {
-//            //        if (ErBingo(plade, søgeTal))
-//            //        {
-//            //            Console.WriteLine($"Bingo! Tallet {søgeTal} udfylder en hel række på pladen for {plade.Navn}");
-//            //            break; // Vi har fundet bingo på denne plade, så gå videre til næste tal
-//            //        }
-//            //    }
-
-//            //    // Indtast det næste tal eller afslut
-//            //    Console.WriteLine("Indtast det næste opråbte tal (eller skriv 'done' for at afslutte): ");
-//            //    input = Console.ReadLine();
-
-//            //        Console.Write("fejl!");
-//            //    break;
-//            //}
-//        }
-
-//        // Metode til at kontrollere, om et tal udfylder en hel række på en plade
-//        static bool ErBingo(Plade plade, int opråbtTal)
-//        {
-//            //string[] rækker = { plade.Række1, plade.Række2, plade.Række3 };
-
-//            foreach (var række in rækker)
+//            while (input.ToLower() != "done")
 //            {
-//                string[] tal = række.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-//                bool fuldRække = true;
-
-//                foreach (var t in tal)
+//                int søgeTal;
+//                if (!int.TryParse(input, out søgeTal))
 //                {
-//                    int talPåPladen;
-//                    if (!int.TryParse(t, out talPåPladen))
-//                    {
-//                        Console.WriteLine($"Uventet fejl: Kunne ikke konvertere tal '{t}' på pladen til en numerisk værdi.");
-//                        continue;
-//                    }
+//                    Console.WriteLine("Ugyldigt input. Indtast venligst et tal eller 'done' for at afslutte: ");
+//                    input = Console.ReadLine();
+//                    continue;
+//                }
 
-//                    if (talPåPladen != opråbtTal)
+//                indtastedeTal.Add(søgeTal);
+
+//                // Tjek om de indtastede tal udgør en hel række på pladen
+//                foreach (var plade in plader)
+//                {
+//                    List<int> bingoRækker = ErBingo(plade, indtastedeTal);
+
+//                    foreach (var bingoRække in bingoRækker)
 //                    {
-//                        fuldRække = false;
-//                        break;
+//                        Console.WriteLine($"HALLOOOO De indtastede tal udgør en hel række {bingoRække} på pladen {plade.Navn}");
 //                    }
 //                }
 
-//                if (fuldRække)
-//                    return true;
+//                input = Console.ReadLine();
+//            }
+//        }
+
+//        // Metode til at kontrollere, om de indtastede tal udgør en hel række på pladen
+//        static List<int> ErBingo(Plade plade, List<int> indtastedeTal)
+//        {
+//            List<int>[] rækker = { plade.Række1, plade.Række2, plade.Række3 };
+//            List<int> bingoRækker = new List<int>();
+
+//            // Tjek for hver række
+//            foreach (var række in rækker)
+//            {
+//                // Hvis antallet af indtastede tal i rækken er 5, tilføj rækkens nummer til listen over bingo-rækker
+//                if (indtastedeTal.Count(t => række.Contains(t)) == 5)
+//                    bingoRækker.Add(rækker.ToList().IndexOf(række) + 1); // Tilføj 1 for at få rækkens nummer, da index starter fra 0
 //            }
 
-//            return false;
+//            return bingoRækker;
 //        }
+
+
 
 //    }
 

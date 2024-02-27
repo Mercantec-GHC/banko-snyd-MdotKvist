@@ -21,6 +21,11 @@
       29,
       49,
       58
+    ],
+    "BingoStatus": [
+      false,
+      false,
+      false
     ]
   },
   {
@@ -45,6 +50,11 @@
       55,
       73,
       89
+    ],
+    "BingoStatus": [
+      false,
+      false,
+      false
     ]
   },
   {
@@ -69,6 +79,11 @@
       54,
       78,
       89
+    ],
+    "BingoStatus": [
+      false,
+      false,
+      false
     ]
   }
 ]
