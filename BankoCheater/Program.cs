@@ -13,17 +13,24 @@ namespace BankoCheater
     {
         static void Main(string[] args)
         {
+            //Variabler til at definere Url stien og stien til ChromeDriveren
             string url = "https://mags-template.github.io/Banko/";
             string driverPath = @"C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\chromedriver.exe";
 
+            //Indtast navn her
             Console.WriteLine("Hvad er dit navn? ");
             string brugerNavn = Console.ReadLine();
+
+            //Indtast hvor mange plader du vil bruge her
             Console.WriteLine("Hvor mange plader vil du bruge?");
-
+            //Convert input til Int(64) og gem i variabelen antalPlader
             long antalPlader = Convert.ToInt64(Console.ReadLine());
-            List<Plade> plader = new List<Plade>();
-            ChromeOptions options = new ChromeOptions();
 
+            //Laver en liste Ved navn plader
+            List<Plade> plader = new List<Plade>();
+
+            //Laver en variable der gemmer indstillinger i den automatiseret ChromeBrowser
+            ChromeOptions options = new ChromeOptions();
             options.PageLoadStrategy = PageLoadStrategy.None;
 
             using (IWebDriver webdriver = new ChromeDriver(driverPath))
@@ -94,6 +101,7 @@ namespace BankoCheater
             List<int> indtastedeTal = new List<int>();
             string input;
             string tidligereTal = "";
+
             while ((input = Console.ReadLine()) != "done")
             {
                 if (int.TryParse(input, out int tal))
@@ -113,44 +121,43 @@ namespace BankoCheater
                     }
 
                     Console.WriteLine(tidligereTal.TrimEnd());
-
-                    foreach (var plade in plader)
-                    {
-                        UpdateBingoStatus(plade, indtastedeTal);
-
-                        int bingoCount = plade.BingoStatus.Count(b => b);
-                        if (bingoCount == 1)
-                        {
-                            Console.WriteLine($"\n\tBingo på ( {bingoCount} ) række! {plade.Navn} har bingo: {string.Join(",", plade.Række1)}\n");
-                        }
-                        else if (bingoCount == 2)
-                        {
-                            Console.WriteLine($"\n\tBingo på ( {bingoCount} ) rækker! {plade.Navn} har bingo på to rækker: {string.Join(",", plade.Række2)}\n");
-                        }
-                        else if (bingoCount == 3)
-                        {
-                            Console.WriteLine($"\n Bingo ( Fuld ) plade! {plade.Navn} har bingo på alle tre rækker: {string.Join(",", plade.Række3)}\n");
-                            return; // Afslutter, når en fuld plade er opnået
-                        }
-                    }
                 }
                 else
                 {
                     Console.WriteLine("Ugyldigt input, prøv igen.");
+                    continue; // Skip rest of the loop and start from the beginning
+                }
+
+                foreach (var plade in plader)
+                {
+                    int bingoRow = CheckBingoRow(plade, indtastedeTal);
+
+                    if (bingoRow != -1)
+                    {
+                        Console.WriteLine($"\nBingo på række {bingoRow + 1}! {plade.Navn} har bingo på række {bingoRow + 1}: {string.Join(",", plade.Rækker[bingoRow])}\n");
+
+                        bool allRowsBingo = plade.BingoStatus.All(status => status);
+                        if (allRowsBingo)
+                        {
+                            Console.WriteLine($"\nBingo på fuld plade! {plade.Navn} har bingo på alle tre rækker!\n");
+                        }
+                    }
                 }
             }
         }
 
-        static void UpdateBingoStatus(Plade plade, List<int> indtastedeTal)
+
+        static int CheckBingoRow(Plade plade, List<int> indtastedeTal)
         {
-            List<List<int>> rækker = new List<List<int>> { plade.Række1, plade.Række2, plade.Række3 };
-            for (int i = 0; i < rækker.Count; i++)
+            for (int i = 0; i < plade.Rækker.Count; i++)
             {
-                if (!rækker[i].Except(indtastedeTal).Any() && !plade.BingoStatus[i])
+                if (!plade.BingoStatus[i] && plade.Rækker[i].All(t => indtastedeTal.Contains(t)))
                 {
-                    plade.BingoStatus[i] = true; // Markerer rækken som havende bingo
+                    plade.BingoStatus[i] = true;
+                    return i;
                 }
             }
+            return -1;
         }
     }
 
@@ -160,9 +167,11 @@ namespace BankoCheater
         public List<int> Række1 { get; set; }
         public List<int> Række2 { get; set; }
         public List<int> Række3 { get; set; }
+        public List<List<int>> Rækker => new List<List<int>> { Række1, Række2, Række3 };
         public bool[] BingoStatus { get; set; } // Tilføjet for at holde styr på bingo-status for hver række
     }
 }
+
 
 
 
