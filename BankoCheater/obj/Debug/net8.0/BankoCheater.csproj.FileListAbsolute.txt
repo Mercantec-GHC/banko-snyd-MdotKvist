@@ -21,4 +21,4 @@ C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoCheater.genruntimeconfig.cache
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\ref\BankoCheater.dll
 C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\bin\Debug\net8.0\SeleniumExtras.WaitHelpers.dll
-C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoChe.62AB7640.Up2Date
+C:\Users\kvist\Documents\GitHub\banko-snyd-MdotKvist\BankoCheater\obj\Debug\net8.0\BankoCheater.csproj.CopyComplete
