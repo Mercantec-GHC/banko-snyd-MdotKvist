@@ -174,12 +174,6 @@ namespace BankoCheater
                         Console.Clear();
                         //Udskriv i konsollen de tideligere tal
                         Console.WriteLine("Tidligere tal: " + string.Join(" - ", indtastedeTal));
-                        //Hvis variablen allRowsBingo er true
-                        if (allRowsBingo)
-                        {   
-                            //Udskriv besked i konsollen
-                            Console.WriteLine($"\nBingo på fuld plade! {plade.Navn}\n");
-                        }
                         //Udskirv besked i konsollen
                         Console.WriteLine("Tallet er allerede indtastet, prøv igen.");
                     }
@@ -220,8 +214,6 @@ namespace BankoCheater
                         {
                             //udskriv beskeden i konsollen
                             Console.WriteLine($"\nBingo på fuld plade! {plade.Navn} har bingo på alle tre rækker!\n");
-                            //Her bliver allRowsBingo true
-                            allRowsBingo = true;
                         }
                     }
                 }
